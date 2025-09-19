@@ -106,11 +106,7 @@ Register your adapter inside a **ModPlugin** and add it to the `PLUGINS` array.
 
 ## 📄 License
 
-MIT © You — feel free to replace with your preferred license.
+This project is licensed under the GNU General Public License v3.0 - see the LICENSE.txt file for details.
 
 ---
 
-## 🙏 Credits
-
-Built with **React**, **Tailwind**, and a lot of love for **KubeJS** & **Create**.  
-Craft on! 🛠️
