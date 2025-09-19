@@ -40,8 +40,8 @@
 
 ### Install & Run
 ```bash
-git clone <your-repo-url>
-cd <your-repo>
+git clone https://github.com/Shadoukita/kubejs-recipe-builder.git
+cd kubejs-recipe-builder
 npm install
 npm run dev
 ```
