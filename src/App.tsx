@@ -5,10 +5,8 @@ import { Copy, Download, Plus, Trash2, Wrench, Hammer, Cog, Layers, Flame, Brace
 
 
 // ------------------------------------------------------------
-// KubeJS Recipe Builder – Modular by Mod (Ready-to-run)
-// Target: NeoForge (initial), Minecraft 1.21.1, KubeJS 2101.7.1-build.181
+// KubeJS Recipe Builder – Modular by Mod
 // Extensible via Mod Plugins -> each plugin contributes recipe adapters
-// Robust against adapter switches & undefined payloads
 // ------------------------------------------------------------
 
 // ---------- Types ----------
