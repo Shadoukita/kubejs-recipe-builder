@@ -1,69 +1,165 @@
-# React + TypeScript + Vite
+# KubeJS Recipe Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A visual, modular recipe editor for **KubeJS** – with first-class support for **Vanilla** and the **Create** mod, plus a flexible `event.custom` editor for anything else.  
+> Target: **NeoForge** • **Minecraft 1.21.1** • **KubeJS 2101.7.1-build.181**
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## Expanding the ESLint configuration
+- **Vanilla adapters**
+  - Shaped crafting (auto-trim pattern + key generation)
+  - Shapeless crafting (up to 9 inputs)
+  - Smelting/Furnace (optional XP + cook time)
+- **Create mod adapters**
+  - Milling, Crushing, Mixing (with `heated` / `superheated`)
+  - Pressing, Cutting, Deploying (**Keep Hand** toggle supported)
+  - Filling, Emptying
+  - Fan Processing: Splashing, Smoking, Blasting (Fan), Haunting
+  - Compacting (with heat)
+  - Mechanical Crafting (pattern + key editor)
+  - **Sequenced Assembly** (loops, transitional item, step editor incl. pressing/cutting/deploying/spouting/emptying/custom)
+- **Custom module**
+  - Generic `event.custom` with free-form **type**, item/fluids, results, and extra JSON merge
+- **Smart input handling**
+  - Vanilla inputs always treated as **1x** (no count prompts)
+  - For Create JSON, ingredient `count > 1` is expanded into repeated ingredient entries (as the game expects)
+- **Helpful UX**
+  - Validation messages before adding to project
+  - One global **Recipe ID** per entry (auto-prefixed `shadoukube:{id}`)
+  - Copy or download generated `/kubejs/server_scripts/recipes.js`
+  - Tip: Press **F3 + H** in Minecraft to show item IDs & tags in tooltips
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🚀 Quick Start
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Prerequisites
+- **Node.js 18+**
+- **npm** (or pnpm/yarn)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Install & Run
+```bash
+git clone <your-repo-url>
+cd <your-repo>
+npm install
+npm run dev
+```
+Open the local URL shown in your terminal.
+
+### Build (optional for local preview / CI)
+```bash
+npm run build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🧭 How to Use
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Pick a **mod** (Vanilla / Create / Custom) and an **adapter**.
+2. Fill out the fields.  
+   - For Create’s **Deploying**, use **Keep Hand** to keep the held item (not consumed).  
+   - For **Sequenced Assembly**, set **loops**, **transitional** item, and add steps.
+3. Enter a unique **Recipe ID** (bottom of the editor).
+4. **Add to Project** → your recipe appears in the list with the generated KubeJS code.
+5. Copy or **save** `recipes.js` and place it into:
+   ```
+   kubejs/server_scripts/recipes.js
+   ```
+
+---
+
+## 📦 GitHub Pages Deploy (recommended setup)
+
+Add a workflow at `.github/workflows/deploy.yml`:
+
+```yml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
 ```
+
+> If you prefer to keep `npm run dev` for local use only (recommended), leave it as is and let the workflow call `npm run build` as shown above.
+
+---
+
+## 🧩 Extending the Builder
+
+Adapters implement:
+
+```ts
+interface RecipeAdapter<TPayload> {
+  id: string;
+  title: string;
+  icon?: React.ReactNode;
+  defaults: TPayload;
+  Editor: React.FC<{ value: TPayload; onChange: (v: TPayload) => void; itemPalette: string[] }>;
+  validate(payload: TPayload): { level: 'error'|'warn'; msg: string }[];
+  toKubeJS(payload: TPayload): string[];
+}
+```
+
+Register your adapter inside a **ModPlugin** and add it to the `PLUGINS` array.
+
+---
+
+## 🛠️ Troubleshooting
+
+- **Unknown registry key** (e.g. `minecraft:wheat_seads`)  
+  → Typo in the item ID. Use **F3 + H** in Minecraft to show accurate IDs (e.g. `minecraft:wheat_seeds`).
+
+- **Create JSON errors** like “No key `type`” or “Not a JSON array”  
+  → Some Create steps expect specific schemas. Use the built-in adapters; the builder outputs correct shapes (e.g. `ingredients` arrays, `{ id, count }` results, `transitional_item` key in sequenced assembly).
+
+- **Vanilla ingredient counts**  
+  → Vanilla crafting/furnace **do not** support counts on ingredients. The builder handles this by expanding counts where needed (Create JSON) and by forcing 1x where vanilla requires it.
+
+---
+
+## 📄 License
+
+MIT © You — feel free to replace with your preferred license.
+
+---
+
+## 🙏 Credits
+
+Built with **React**, **Tailwind**, and a lot of love for **KubeJS** & **Create**.  
+Craft on! 🛠️
