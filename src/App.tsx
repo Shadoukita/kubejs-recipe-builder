@@ -1322,29 +1322,48 @@ const mechanicalAdapter: RecipeAdapter<MechanicalPayload> = {
   id: "create.mechanical_crafting",
   title: "Create: Mechanical Crafting",
   icon: <Cog size={16} />,
-  defaults: { pattern: [""], key: { A: { id: "minecraft:iron_ingot", count: 1 } }, result: { id: "minecraft:iron_block", count: 1 }, acceptMirrored: false, recipeId: "example:create_mechanical" },
+  defaults: {
+    pattern: ["A"],
+    key: { A: { id: "create:andesite_alloy", count: 1 } },
+    result: { id: "create:crushing_wheel", count: 2 },
+    acceptMirrored: true,
+    recipeId: "example:create_mechanical"
+  },
   Editor: MechanicalEditor,
   validate: (p) => {
     const msgs: { level: "error" | "warn"; msg: string }[] = [];
-    if (!Array.isArray(p.pattern) || p.pattern.length === 0) msgs.push({level:'error',msg:'Pattern fehlt.'});
+    if (!Array.isArray(p.pattern) || p.pattern.length === 0) msgs.push({ level: 'error', msg: 'Pattern fehlt.' });
     const used = Array.from(new Set((p.pattern||[]).join('').split('').filter(ch=>ch!==' ')));
-    for (const ch of used) if (!p.key?.[ch]?.id) msgs.push({level:'error',msg:`Mapping für '${ch}' fehlt.`});
-    if (!p.result?.id) msgs.push({level:'error',msg:'Result Item missing!'});
+    for (const ch of used) if (!p.key?.[ch]?.id) msgs.push({ level: 'error', msg: `Mapping für '${ch}' fehlt.` });
+    if (!p.result?.id) msgs.push({ level: 'error', msg: 'Result Item missing!' });
     return msgs;
   },
   toKubeJS: (p) => {
+    // Build key: always ingredient-style (no counts)
     const keyJson: Record<string, any> = {};
-    Object.entries(p.key||{}).forEach(([k,v]) => { if (v) keyJson[k] = itemToJson({ ...v, count: 1 }); });
-    const obj:any = {
+    Object.entries(p.key || {}).forEach(([k, v]) => {
+      if (v) keyJson[k] = itemToJson({ ...v, count: 1 }); // ensures { item: "..."} or { tag: "..." }
+    });
+
+    // Build result with "id" (not "item")
+    const res: any = { id: p.result.id };
+    if ((p.result.count ?? 1) !== 1) res.count = p.result.count;
+    const nbt = parseNbt(p.result.nbt);
+    if (nbt) res.nbt = nbt;
+
+    const obj: any = {
       type: "create:mechanical_crafting",
-      pattern: p.pattern,
+      category: "misc",
       key: keyJson,
-      result: resultObjForCreate(p.result)
+      pattern: p.pattern,
+      result: res
     };
-    if (typeof p.acceptMirrored === 'boolean') obj.acceptMirrored = p.acceptMirrored;
-    return [`event.custom(${JSON.stringify(obj,null,2)})${p.recipeId?`.id('${p.recipeId}')`:''};`];
+    if (typeof p.acceptMirrored === "boolean") obj.accept_mirrored = p.acceptMirrored;
+
+    return [`event.custom(${JSON.stringify(obj, null, 2)})${p.recipeId ? `.id('${p.recipeId}')` : ''};`];
   }
 };
+
 
 
 // ---------- Create: Compacting ----------
@@ -2359,6 +2378,7 @@ export default function App() {
 
         <footer className="mt-10 text-xs opacity-60">
           <p>Config: Modloader <b>{platform}</b> • MC <b>{mcVersion}</b> • KubeJS <b>{kubeVersion}</b></p>
+          <p>Version: KubeJS Builder 0.1.2</p>
         </footer>
       </div>
     </div>
